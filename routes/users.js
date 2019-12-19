@@ -59,6 +59,7 @@ router.post('/login', function (req, res) {
           });
           res.cookie('token', token, { httpOnly: true })
             .sendStatus(200);
+          console.log(res)
         }
       });
     }
