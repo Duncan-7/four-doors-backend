@@ -2,11 +2,11 @@ var express = require('express');
 var router = express.Router();
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
-const withAuth = require('../middleware')
+const withAuth = require('../middleware');
+const Playthrough = require('../models/playthrough');
 
 /* CREATE User */
 router.post('/', function (req, res, next) {
-  console.log(req.body);
   const email = req.body.email;
   const password = req.body.password;
   const user = new User({ email, password });
@@ -57,9 +57,7 @@ router.post('/login', function (req, res) {
           const token = jwt.sign(payload, process.env.SECRET_KEY, {
             expiresIn: '1h'
           });
-          res.cookie('token', token, { httpOnly: true })
-            .sendStatus(200);
-          console.log(res)
+          res.json({ token: token, userId: user._id })
         }
       });
     }
@@ -68,6 +66,18 @@ router.post('/login', function (req, res) {
 
 router.get('/test', withAuth, function (req, res) {
   res.send('testing auth');
+})
+
+router.get('/:id/history', withAuth, function (req, res, next) {
+  Playthrough.find({ 'user': req.params.id }).exec(function (err, results) {
+    if (err) {
+      res.status(500)
+        .json({
+          error: 'Internal error please try again'
+        });
+    }
+    res.json({ playerData: results });
+  })
 })
 
 
