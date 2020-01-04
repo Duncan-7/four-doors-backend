@@ -4,12 +4,18 @@ const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const withAuth = require('../middleware');
 const Playthrough = require('../models/playthrough');
+const async = require('async');
 
 /* CREATE User */
 router.post('/', function (req, res, next) {
   const email = req.body.email;
   const password = req.body.password;
-  const user = new User({ email, password });
+  const balance = 100
+  const user = new User({
+    email: email,
+    password: password,
+    balance: balance
+  });
   user.save(function (err) {
     if (err) {
       console.log(err)
@@ -69,18 +75,26 @@ router.get('/test', withAuth, function (req, res) {
 })
 
 router.get('/:id/history', withAuth, function (req, res, next) {
-  Playthrough.find({ 'user': req.params.id }).exec(function (err, results) {
+  async.parallel({
+    playerData: function (callback) {
+      Playthrough.find({ 'user': req.params.id }).exec(callback);
+    },
+    user: function (callback) {
+      User.findById(req.params.id).exec(callback);
+    }
+  }, function (err, results) {
     if (err) {
       res.status(500)
         .json({
           error: 'Internal error please try again'
         });
+    } else {
+      res.status(200).json({
+        playerData: results.playerData,
+        user: results.user
+      });
     }
-    res.json({ playerData: results });
   })
 })
-
-
-
 
 module.exports = router;
